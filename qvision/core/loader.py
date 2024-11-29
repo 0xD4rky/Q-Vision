@@ -1,13 +1,7 @@
-import torch
-import torchvision.models as models
-import tensorflow as tf
-import onnx
-import onnxruntime as ort
+from ultralytics import YOLO
 
-class ModelLoader:
+# Load the original model
+model = YOLO('yolov8n.pt')
 
-    def __init__(self):
-        pass
-
-    def load_pytorch_model(self, model_name = 'resnet18', pretrained = true, model_path = None):
-        
+# Export the model to FP16
+model.export(format='engine', half=True)
