@@ -56,3 +56,19 @@ transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 ])
+
+train_set = Load(
+    img_dir = '',
+    label_dir = '',
+    transform = transform
+)
+validation_set = Load(
+    img_dir = '',
+    label_dir = '',
+    transform = transform
+)
+def collate_fn(batch):
+    return tuple(zip(*batch)) # ((img1,img2,img3,...),(label1,label2,label3,...))
+
+train_loader = DataLoader(train_set, batch_size=8, shuffle=True, collate_fn=collate_fn)
+val_loader = DataLoader(train_set, batch_size=8, shuffle=False, collate_fn=collate_fn)
