@@ -42,4 +42,17 @@ class Load(Dataset):
                     y2 = (y_centre + h/2) * height
                     boxes.append([x1,y1,x2,y2])
                     labels.append([class_id])
-        
+        boxes = torch.tensor(boxes, dtype = torch.float32)
+        labels = torch.tensor(labels, dtype = torch.int64)
+        target = {} # setting up target format {'bb':'label'}
+        target['boxes'] = boxes
+        target['labels'] = labels
+        if self.transform:
+            image = self.transform(image)
+            return image,target
+
+transform = transforms.Compose([
+    transforms.Resize(256),
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+])
