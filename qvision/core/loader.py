@@ -47,6 +47,8 @@ class Load(Dataset):
         target = {} # setting up target format {'bb':'label'}
         target['boxes'] = boxes
         target['labels'] = labels
+        target['img_id'] = torch.tensor([idx])
+        
         if self.transform:
             image = self.transform(image)
             return image,target
