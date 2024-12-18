@@ -97,3 +97,29 @@ def eval(model, testloader, epoch, epochs, criterion, device):
     test_loss = running_loss / len(testloader)
     test_accuracy = 100 * (correct/total)
     return test_loss, test_accuracy
+  
+epochs = 5
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+import time
+
+for epoch in range(epochs):
+  start = time.time()
+  loss, acc, gradients = train(model, trainloader, epoch, epochs, criterion, optim, device)
+  end = time.time()
+  print(f"time taken to run {epoch+1}th epoch is : {(end-start)}")
+  print(f"training loss : {loss}")
+  print(f"training accuracy : {acc}")
+  print(F"Training complete")
+
+epochs = 1
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+import time
+
+for epoch in range(epochs):
+  start = time.time()
+  loss, acc = eval(model, testloader, epoch, epochs, criterion, device)
+  end = time.time()
+  print(f"time taken to run {epoch+1}th epoch is : {(end-start)}")
+  print(f"testing loss : {loss}")
+  print(f"testing accuracy : {acc}")
+  print(F"testing complete")
