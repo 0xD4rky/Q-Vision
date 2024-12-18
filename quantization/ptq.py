@@ -31,3 +31,69 @@ model = nn.Sequential(
     nn.ReLU(),
     nn.Linear(128,10)
 )
+
+criterion = nn.CrossEntropyLoss()
+optim = Adam(model.parameters(),lr = 0.001)
+
+from tqdm import tqdm
+
+def train(model, trainloader,epoch, epochs, criterion, optimizer, device):
+
+  model.train()
+  running_loss = 0.0
+  correct = 0
+  total = 0
+
+  for i,batch in enumerate(tqdm(trainloader, desc = f"training {epoch+1}/{epochs} epochs")):
+
+    x,y = batch
+    x = x.to(device)
+    y = y.to(device)
+
+    gradients = []
+    output = model(x)
+    optimizer.zero_grad()
+    loss = criterion(output,y)
+    loss.backward()
+
+    for param in model.parameters():
+      gradients.append(param.grad.detach().cpu().numpy().copy())
+
+    optimizer.step()
+
+    running_loss += loss.item()
+    _, prediction = output.max(1)
+    total += y.size(0)
+    correct += prediction.eq(y).sum().item() #.item() is used to extract scalar value from tensor
+
+  train_loss = running_loss / len(trainloader)
+  train_accuracy = 100 * (correct/total)
+  return train_loss, train_accuracy, gradients
+
+def eval(model, testloader, epoch, epochs, criterion, device):
+
+  model.eval()
+  running_loss = 0.0
+  total = 0
+  correct = 0
+
+  with torch.no_grad():
+
+    for i, batch in enumerate(tqdm(testloader)):
+
+      x,y = batch
+      x = x.to(device)
+      y = y.to(device)
+
+      output = model(x)
+      loss = criterion(output,y)
+
+      running_loss += loss.item() # extracts scalar from tensor
+      _, prediction = output.max(1)
+      total += y.size(0)
+      correct += prediction.eq(y).sum().item()
+
+    
+    test_loss = running_loss / len(testloader)
+    test_accuracy = 100 * (correct/total)
+    return test_loss, test_accuracy
