@@ -21,3 +21,13 @@ test_set = torchvision.datasets.MNIST(root = './', train = False, transform = tr
 trainloader = DataLoader(train_set, batch_size = 8, shuffle = True)
 testloader = DataLoader(test_set, batch_size = 8, shuffle = False)
 
+model = nn.Sequential(
+    nn.Flatten(),
+    nn.Linear((28*28),512),
+    nn.ReLU(),
+    nn.Linear(512,512),
+    nn.ReLU(),
+    nn.Linear(512, 128),
+    nn.ReLU(),
+    nn.Linear(128,10)
+)
