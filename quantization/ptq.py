@@ -123,3 +123,71 @@ for epoch in range(epochs):
   print(f"testing loss : {loss}")
   print(f"testing accuracy : {acc}")
   print(F"testing complete")
+
+import os
+from pathlib import Path
+def print_size_of_model(model):
+
+  torch.save(model.state_dict(),"unquantized.p")
+  print("size (KB) ", os.path.getsize("unquantized.p")/1e3)
+  os.remove("unquantized.p")
+
+model_name = "unquantized.pt"
+
+if Path(model_name).exists():
+  model.load_state_dict(torch.load(model_name))
+  print("model loaded from disk")
+else:
+  torch.save(model.state_dict(), model_name)
+
+
+def before_quant():
+    """
+    fund: to analyse the weights and model sizes before quantization
+    param: no param required
+    """
+    print('weights before quantization')
+    print(model[1].weight)
+    print(model[1].weight.dtype)
+    print('size of model before quantization :')
+    print_size_of_model(model)
+
+
+class Quantized_model(nn.Module):
+  """
+  aim: this class is used to create a quantized model using a min max observer
+  """
+  def __init__(self):
+    super(Quantized_model,self).__init__()
+    self.quant = torch.quantization.QuantStub()
+    self.model = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear((28 * 28), 512),
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, 128),
+            nn.ReLU(),
+            nn.Linear(128, 10)
+        )
+    self.dequant = torch.quantization.DeQuantStub()
+
+  def forward(self,x):
+    x = self.quant(x)
+    x = self.model(x)
+    x = self.dequant(x)
+    return x
+
+def remap_state_dict(original_state_dict, quantized_model):
+    new_state_dict = {}
+    for key in original_state_dict.keys():
+        new_key = "model." + key if key.startswith(("1.", "3.", "5.", "7.")) else key
+        new_state_dict[new_key] = original_state_dict[key]
+    return new_state_dict
+
+quantized_model = Quantized_model()
+original_state_dict = model.state_dict()
+mapped_state_dict = remap_state_dict(original_state_dict, quantized_model)
+quantized_model.load_state_dict(mapped_state_dict)
+quantized_model.to(device)
+quantized_model.eval()
