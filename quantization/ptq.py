@@ -211,3 +211,8 @@ def test(epochs):
 
 test(epochs)
 
+quantized_model = torch.ao.quantization.convert(quantized_model)
+print(f"weights after quantization is : ")
+for i in [1]: 
+    print(f"\nQuantizedLinear layer {i} weights:")
+    print(torch.int_repr(quantized_model.model[i].weight))
