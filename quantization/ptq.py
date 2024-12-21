@@ -191,3 +191,23 @@ mapped_state_dict = remap_state_dict(original_state_dict, quantized_model)
 quantized_model.load_state_dict(mapped_state_dict)
 quantized_model.to(device)
 quantized_model.eval()
+
+quantized_model.qconfig = torch.ao.quantization.default_qconfig
+quantized_model = torch.ao.quantization.prepare(quantized_model)
+
+epochs = 1
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+import time
+
+def test(epochs):
+  for epoch in range(epochs):
+    start = time.time()
+    loss, acc = eval(quantized_model, testloader, epoch, epochs, criterion, device)
+    end = time.time()
+    print(f"time taken to run {epoch+1}th epoch is : {(end-start)}")
+    print(f"testing loss : {loss}")
+    print(f"testing accuracy : {acc}")
+    print(F"testing complete")
+
+test(epochs)
+
