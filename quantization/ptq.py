@@ -216,3 +216,24 @@ print(f"weights after quantization is : ")
 for i in [1]: 
     print(f"\nQuantizedLinear layer {i} weights:")
     print(torch.int_repr(quantized_model.model[i].weight))
+
+def comparision(model, quantized_model):
+  """
+  Observing:
+  * quantized weights
+  * normal-weights
+  * dequantized weights
+  """
+
+  layer = quantized_model.model[1]
+  print(f"\nLayer {1} quantized weight: \n")
+  weight_tensor = layer.weight()  
+  print(torch.int_repr(weight_tensor))
+
+  layer = model[1]
+  print(f"\nlayer {1} un-quantized weights: \n")
+  print(layer.weight)
+
+  layer = quantized_model.model[1]
+  print(f"\nlayer {1} de-quantized weights: \n")
+  print(torch.dequantize(layer.weight()))
