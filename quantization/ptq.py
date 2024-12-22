@@ -237,3 +237,9 @@ def comparision(model, quantized_model):
   layer = quantized_model.model[1]
   print(f"\nlayer {1} de-quantized weights: \n")
   print(torch.dequantize(layer.weight()))
+
+  print(f"size of model before quantization is: ")
+  print(print_size_of_model(model))
+
+  print(f"size of model after quantization is: ")
+  print(print_size_of_model(quantized_model))
