@@ -9,3 +9,13 @@ if __name__ == '__main__':
     parser.add_argument('--batch', type=int, default=1, required=False, help='batch size')
     parser.add_argument('--workspace', type=int, default=4, required=False, help='workspace')
     args = parser.parse_args()
+
+
+    model = YOLO(args.model)
+
+    if args.q == 'fp16':
+        model.export(format = 'engine', data = args.data, batch = args.batch, workspace = args.workspace, half = True)
+    elif args.q == 'int8':
+        model.export(format = 'engine', data = args.data, batch = args.batch, workspace = args.workspace, int8 = True)
+    else:
+        print('\n[ERROR] Make sure "--q" parameter is entered correctly!')
