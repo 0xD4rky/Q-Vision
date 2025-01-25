@@ -9,3 +9,28 @@ if __name__ == '__main__':
     parser.add_argument('--q', type=str, default='fp16', required=False, help='[fp16, int8]')
     parser.add_argument('--data', type=str, default='coco.yaml', required=True, help='Dataset')
     args = parser.parse_args()
+
+    model = YOLO(args.model, task='detect')
+    
+    file_extension = pathlib.Path(args.model).suffix
+
+    if file_extension == '.engine':
+        if args.q == 'fp16':
+            results = model.val(
+                data=args.data,
+                batch=1,
+                imgsz=640,
+                verbose=False,
+                half = True
+            )
+        elif args.q == 'int8':
+            results = model.val(
+                data=args.data,
+                batch=1,
+                imgsz=640,
+                verbose=False,
+                int8 = True
+            )
+
+
+    
