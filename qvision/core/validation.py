@@ -31,6 +31,28 @@ if __name__ == '__main__':
                 verbose=False,
                 int8 = True
             )
+        else:
+            print('\n[ERROR] Make sure "--q" parameter is entered correctly!')
+            
+    elif file_extension == '.onnx':
+        if args.q == 'fp16':
+            results = model.val(
+                data=args.data,
+                batch=1,
+                imgsz=640,
+                verbose=False,
+            )
+        else:
+            print('\n[ERROR] ONNX supports only FP16 quantization!')
+    elif file_extension == '.pt':
+        results = model.val(
+            data=args.data,
+            batch=1,
+            imgsz=640,
+            verbose=False,
+        )
+    else:
+        print('\n[ERROR] File extensions only support [.engine], [.onnx], [.pt]')
 
 
-    
+
