@@ -63,6 +63,22 @@ def main():
             bnb_4bit_quant_type = "nf4",
             bnb_4bit_compute_dtype = torch.bfloat16
         )
+
+    token = os.environ.get("HF_TOKEN", None)
+    model = AutoModelForCausalLM.from_pretrained(
+        args.model_id,
+        quantization = bnb_config,
+        device_map={"": PartialState().process_index},
+        attention_dropout=args.attention_dropout
+    )
+    data = load_dataset(
+        args.dataset_name,
+        data_dir=args.subset,
+        split=args.split,
+        token=token,
+        num_proc=args.num_proc if args.num_proc else multiprocessing.cpu_count(),
+    )
+    
     
 
 
