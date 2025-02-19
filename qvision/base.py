@@ -36,7 +36,7 @@ def get_args():
     parser.add_argument("--learning_rate", type=float, default=2e-4)
     parser.add_argument("--lr_scheduler_type", type=str, default="cosine")
     parser.add_argument("--warmup_steps", type=int, default=100)
-    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--output_dir", type=str, default="finetune_smollm2_python")
     parser.add_argument("--num_proc", type=int, default=None)
     parser.add_argument("--save_merged_model", type=bool, default=True)
@@ -46,7 +46,25 @@ def get_args():
     return parser
 
 def main():
+
+    lora_config = LoraConfig(
+        r = 16,
+        lora_alpha = 32,
+        lora_dropout = 0.05,
+        bias="none",
+        task_type="CAUSAL_LM"
+    )
+    bnb_config = None
+
+    if args.use_bnb == True:
+
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bits = True,
+            bnb_4bit_quant_type = "nf4",
+            bnb_4bit_compute_dtype = torch.bfloat16
+        )
     
+
 
 if __name__ == "__main__":
 
