@@ -42,5 +42,16 @@ def get_args():
     parser.add_argument("--save_merged_model", type=bool, default=True)
     parser.add_argument("--push_to_hub", type=bool, default=True)
     parser.add_argument("--repo_id", type=str, default="SmolLM2-1.7B-finetune")
-    
+
     return parser
+
+def main():
+    
+
+if __name__ == "__main__":
+
+    args = get_args()
+    set_seed(args.seed)
+    os.makedirs(args.output_dir, exist_ok = True)
+    logging.set_verbosity_error()
+    main(args)
