@@ -102,14 +102,33 @@ def main():
         peft_config=lora_config,
         dataset_text_field=args.dataset_text_field,
     )
-    
+
     print("Training...")
     trainer.train()
 
     print("Saving the last checkpoint of the model")
     model.save_pretrained(os.path.join(args.output_dir, "final_checkpoint/"))
     
+    if args.save_merged_model:
+        # Free memory for merging weights
+        del model
+        if is_torch_xpu_available():
+            torch.xpu.empty_cache()
+        elif is_torch_npu_available():
+            torch.npu.empty_cache()
+        else:
+            torch.cuda.empty_cache()
 
+        model = AutoPeftModelForCausalLM.from_pretrained(args.output_dir, device_map="auto", torch_dtype=torch.bfloat16)
+        model = model.merge_and_unload()
+
+        output_merged_dir = os.path.join(args.output_dir, "final_merged_checkpoint")
+        model.save_pretrained(output_merged_dir, safe_serialization=True)
+
+        if args.push_to_hub:
+            model.push_to_hub(args.repo_id, "Upload model")
+    
+    print("Training Done! 💥")
 
 if __name__ == "__main__":
 
