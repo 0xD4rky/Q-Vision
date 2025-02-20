@@ -78,7 +78,36 @@ def main():
         token=token,
         num_proc=args.num_proc if args.num_proc else multiprocessing.cpu_count(),
     )
+    trainer = SFTTrainer(
+        model=model,
+        train_dataset=data,
+        max_seq_length=args.max_seq_length,
+        args=transformers.TrainingArguments(
+            per_device_train_batch_size=args.micro_batch_size,
+            gradient_accumulation_steps=args.gradient_accumulation_steps,
+            warmup_steps=args.warmup_steps,
+            max_steps=args.max_steps,
+            learning_rate=args.learning_rate,
+            lr_scheduler_type=args.lr_scheduler_type,
+            weight_decay=args.weight_decay,
+            bf16=args.bf16,
+            logging_strategy="steps",
+            logging_steps=10,
+            output_dir=args.output_dir,
+            optim="paged_adamw_8bit",
+            seed=args.seed,
+            run_name=f"train-{args.model_id.split('/')[-1]}",
+            report_to="wandb",
+        ),
+        peft_config=lora_config,
+        dataset_text_field=args.dataset_text_field,
+    )
     
+    print("Training...")
+    trainer.train()
+
+    print("Saving the last checkpoint of the model")
+    model.save_pretrained(os.path.join(args.output_dir, "final_checkpoint/"))
     
 
 
