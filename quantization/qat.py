@@ -8,7 +8,7 @@ import time
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 import copy
-
+import os
 
 class Block(nn.Module):
     expansion = 1
@@ -95,4 +95,31 @@ def train(model, train_loader, criterion, optimizer, device, epochs=10):
             
         print(f'Epoch {epoch+1}: Loss = {running_loss/len(train_loader):.3f}, Accuracy = {100.*correct/total:.2f}%')
 
+def evaluate(model, test_loader, device):
+    model.eval()
+    correct = 0
+    total = 0
+    inference_time = 0
+    
+    with torch.no_grad():
+        for inputs, labels in test_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            
+            start_time = time.time()
+            outputs = model(inputs)
+            inference_time += time.time() - start_time
+            
+            _, predicted = outputs.max(1)
+            total += labels.size(0)
+            correct += predicted.eq(labels).sum().item()
+    
+    accuracy = 100. * correct / total
+    avg_inference_time = inference_time / len(test_loader)
+    return accuracy, avg_inference_time
+
+def get_model_size(model):
+    torch.save(model.state_dict(), "temp.p")
+    size = os.path.getsize("temp.p") / (1024 * 1024)
+    os.remove('temp.p')
+    return size
 
