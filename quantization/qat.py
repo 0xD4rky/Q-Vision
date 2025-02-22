@@ -71,4 +71,28 @@ class ResNet(nn.Module):
         out = self.linear(out)
         out = self.dequant(out)
         return out
+    
+def train(model, train_loader, criterion, optimizer, device, epochs=10):
+    model.train()
+    for epoch in range(epochs):
+        running_loss = 0.0
+        correct = 0
+        total = 0
+        
+        for i, (inputs, labels) in enumerate(train_loader):
+            inputs, labels = inputs.to(device), labels.to(device)
+            
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            
+            running_loss += loss.item()
+            _, predicted = outputs.max(1)
+            total += labels.size(0)
+            correct += predicted.eq(labels).sum().item()
+            
+        print(f'Epoch {epoch+1}: Loss = {running_loss/len(train_loader):.3f}, Accuracy = {100.*correct/total:.2f}%')
+
 
