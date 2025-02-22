@@ -72,7 +72,8 @@ def main(args = None):
         args.model_id,
         quantization_config = bnb_config,
         device_map={"": PartialState().process_index},
-        attention_dropout=args.attention_dropout
+        attention_dropout=args.attention_dropout,
+        trust_remote_code=True
     )
     data = load_dataset(
         args.dataset_name,
@@ -80,11 +81,11 @@ def main(args = None):
         split=args.split,
         token=token,
         num_proc=args.num_proc if args.num_proc else multiprocessing.cpu_count(),
+        trust_remote_code=True
     )
     trainer = SFTTrainer(
         model=model,
         train_dataset=data,
-        max_seq_length=args.max_seq_length,
         args=transformers.TrainingArguments(
             per_device_train_batch_size=args.micro_batch_size,
             gradient_accumulation_steps=args.gradient_accumulation_steps,
@@ -103,7 +104,6 @@ def main(args = None):
             report_to="wandb",
         ),
         peft_config=lora_config,
-        dataset_text_field=args.dataset_text_field,
     )
 
     print("Training...")

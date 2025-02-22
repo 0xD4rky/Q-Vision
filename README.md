@@ -7,7 +7,7 @@ FINE TUNING THE BASE MODEL:
 ```
 accelerate launch qvision/base.py \
     --model_id "HuggingFaceTB/SmolLM2-1.7B" \
-    --dataset_name "HuggingFaceTB/smoltalk" \
+    --dataset_name "bigcode/the-stack-smol-xs" \
     --subset "data/python" \
     --dataset_text_field "content" \
     --split "train" \
