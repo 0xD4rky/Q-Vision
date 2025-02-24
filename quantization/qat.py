@@ -143,6 +143,3 @@ train_loader = DataLoader(trainset, batch_size=128, shuffle=True, num_workers=2)
 test_loader = DataLoader(testset, batch_size=128, shuffle=False, num_workers=2)
 
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-
-model = ResNet(Block, [2, 2, 2, 2])
-model = model.to(device)
