@@ -146,5 +146,25 @@ def main():
     standard_accuracy, standard_inference_time = evaluate(model, test_loader, device)
     standard_size = get_model_size(model)
 
+    print("\nPreparing QAT model...")
+    qat_model = copy.deepcopy(model)
+    qat_model.qconfig = torch.quantization.get_default_qat_qconfig('fbgemm')
+    qat_model = prepare_qat(qat_model)
+    qat_model = qat_model.to(device)
+
+    print("Training QAT model...")
+    optimizer = optim.SGD(qat_model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
+    train(qat_model, train_loader, criterion, optimizer, device, epochs=5)
+
+    qat_model = qat_model.cpu()
+    qat_model = convert(qat_model)
+    qat_accuracy, qat_inference_time = evaluate(qat_model, test_loader, torch.device('cpu'))
+    qat_size = get_model_size(qat_model)
+
+    print("\nComparison Results:")
+    print(f"Standard Model - Accuracy: {standard_accuracy:.2f}%, Inference Time: {standard_inference_time*1000:.2f}ms, Size: {standard_size:.2f}MB")
+    print(f"QAT Model     - Accuracy: {qat_accuracy:.2f}%, Inference Time: {qat_inference_time*1000:.2f}ms, Size: {qat_size:.2f}MB")
+
+
 if __name__ == "__main__":
     main()
