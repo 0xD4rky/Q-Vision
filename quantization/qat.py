@@ -17,10 +17,10 @@ class Block(nn.Module):
         super().__init__()
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size = 3, stride = 1, padding = 1, bias = False)
         self.bn1 = nn.BatchNorm2d(out_channels)
-        self.conv1 = nn.Conv2d(out_channels, out_channels, kernel_size = 3, stride = 1, padding = 1, bias = False)
-        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size = 3, stride = 1, padding = 1, bias = False)
+        self.bn2 = nn.BatchNorm2d(out_channels)
 
-        self.shortcut = nn.Sequantial()
+        self.shortcut = nn.Sequential()
         if stride != 1 or in_channels != self.expansion * in_channels:
 
             self.shortcut = nn.Sequential(
@@ -143,3 +143,20 @@ train_loader = DataLoader(trainset, batch_size=128, shuffle=True, num_workers=2)
 test_loader = DataLoader(testset, batch_size=128, shuffle=False, num_workers=2)
 
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+
+def main():
+
+    model = ResNet(Block, [2, 2, 2, 2])
+    model = model.to(device)
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4)
+
+    print("Training standard model...")
+    train(model, train_loader, criterion, optimizer, device)
+
+    standard_accuracy, standard_inference_time = evaluate(model, test_loader, device)
+    standard_size = get_model_size(model)
+
+if __name__ == "__main__":
+    main()
