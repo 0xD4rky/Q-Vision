@@ -90,3 +90,29 @@ def main(
         num_proc=num_proc if num_proc else multiprocessing.cpu_count(),
         trust_remote_code=True
     )
+
+    trainer = SFTTrainer(
+        model=model,
+        train_dataset=data,
+        args=transformers.TrainingArguments(
+            per_device_train_batch_size=micro_batch_size,
+            gradient_accumulation_steps=gradient_accumulation_steps,
+            warmup_steps=warmup_steps,
+            max_steps=max_steps,
+            learning_rate=learning_rate,
+            lr_scheduler_type=lr_scheduler_type,
+            weight_decay=weight_decay,
+            bf16=bf16,
+            logging_strategy="steps",
+            logging_steps=10,
+            output_dir=output_dir,
+            optim="paged_adamw_8bit",
+            seed=seed,
+            run_name=f"train-{model_id.split('/')[-1]}",
+            report_to="wandb",
+        ),
+        peft_config=lora_config,
+    )
+
+    print("Training...")
+    trainer.train()
