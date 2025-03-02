@@ -116,3 +116,26 @@ def main(
 
     print("Training...")
     trainer.train()
+
+    print("Saving the last checkpoint of the model")
+    model.save_pretrained(os.path.join(output_dir, "final_checkpoint/"))
+    
+    if save_merged_model:
+        del model
+        if is_torch_xpu_available():
+            torch.xpu.empty_cache()
+        elif is_torch_npu_available():
+            torch.npu.empty_cache()
+        else:
+            torch.cuda.empty_cache()
+
+        model = AutoPeftModelForCausalLM.from_pretrained(output_dir, device_map="auto", torch_dtype=torch.bfloat16)
+        model = model.merge_and_unload()
+
+        output_merged_dir = os.path.join(output_dir, "final_merged_checkpoint")
+        model.save_pretrained(output_merged_dir, safe_serialization=True)
+
+        if push_to_hub:
+            model.push_to_hub(repo_id, "Upload model")
+    
+    print("Training Done! 💥")
