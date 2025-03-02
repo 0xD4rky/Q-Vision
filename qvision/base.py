@@ -81,3 +81,12 @@ def main(
         attention_dropout=attention_dropout,
         trust_remote_code=True
     )
+
+    data = load_dataset(
+        dataset_name,
+        data_dir=subset,
+        split=split,
+        token=token,
+        num_proc=num_proc if num_proc else multiprocessing.cpu_count(),
+        trust_remote_code=True
+    )
