@@ -56,3 +56,28 @@ def main(
     - Saving the model and optionally merging LoRA weights
     - Pushing to Hugging Face Hub if requested
     """
+
+    lora_config = LoraConfig(
+        r=lora_r,
+        lora_alpha=lora_alpha,
+        lora_dropout=lora_dropout,
+        bias="none",
+        task_type="CAUSAL_LM"
+    )
+    bnb_config = None
+
+    if use_bnb:
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bits=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.bfloat16
+        )
+
+    token = os.environ.get("HF_TOKEN", None)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        quantization_config=bnb_config,
+        device_map={"": PartialState().process_index},
+        attention_dropout=attention_dropout,
+        trust_remote_code=True
+    )
