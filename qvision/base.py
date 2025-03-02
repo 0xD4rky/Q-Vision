@@ -139,3 +139,13 @@ def main(
             model.push_to_hub(repo_id, "Upload model")
     
     print("Training Done! 💥")
+
+
+if __name__ == "__main__":
+
+    output_dir = "finetune_smollm2_python"  
+    os.makedirs(output_dir, exist_ok=True)
+    set_seed(42)
+    logging.set_verbosity_error()
+    
+    main()
