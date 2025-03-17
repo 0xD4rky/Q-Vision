@@ -25,3 +25,18 @@ def save_llm_locally(model, tokenizer, save_path: str):
     """
     model.save_pretrained(save_path)
     tokenizer.save_pretrained(save_path)
+
+
+def push_to_hub(local_repo: str, repo_id: str):
+    """
+    Push the local model folder to the Hugging Face Hub.
+    """
+    from huggingface_hub import HfApi, create_repo, upload_folder
+
+    api = HfApi()
+    create_repo(repo_id, exist_ok=True)
+    upload_folder(
+        folder_path=local_repo,
+        repo_id=repo_id,
+        commit_message="Add quantized model"
+    )
