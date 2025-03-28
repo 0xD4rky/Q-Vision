@@ -12,8 +12,11 @@ def load_llm(
 
     model = AutoModel.from_pretrained(
         model_name,
-        torch_dtype = torch.float32
+        torch_dtype = torch.bfloat16,
+        device_map="auto",
+        low_cpu_mem_usage=True
     )
+    
     model.to(device)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model.eval()
