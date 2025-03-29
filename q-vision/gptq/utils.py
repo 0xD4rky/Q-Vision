@@ -46,3 +46,33 @@ def caliberation_data(tokenizer, dataset_name="karpathy/tiny_shakespeare", num_s
     calibration_data = torch.stack([input_ids[i:i+seq_len] for i in start_indices]).to("cuda")
     
     return calibration_data
+
+def compute_activations(model, input_ids):
+
+    """
+    Function to compute the activations of model using the caliberation data
+    """
+
+    activations = {}
+
+    def hook_fn(name):
+        def hook(module, input, output):
+            activations[name] = input[0].detach().clone()
+        return activations
+    
+    handles = []
+    for name, module in model.named_modules():
+        if isinstance(module, torch.nn.Linear):
+            handle = module.register_forward_hook(hook_fn(name))
+            handles.append(handle)
+
+    with torch.no_grad():
+        batch_size = 16
+        for i in range(0, input_ids.size(0), batch_size):
+            batch = input_ids[i:i+batch_size]
+            model(batch)
+    
+    for handle in handles:
+        handle.remove()
+    
+    return activations
