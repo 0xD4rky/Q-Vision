@@ -27,7 +27,7 @@ def caliberation_data(tokenizer, dataset_name="karpathy/tiny_shakespeare", num_s
     """
 
     dataset = load_dataset(dataset_name, split = "train")
-    text = dataset["text"][0] # Tiny Shakespeare has one large text entry
+    text = dataset["text"][0] # since the Tiny Shakespeare has one large text entry
 
     tokenized = tokenizer(
         text, 
