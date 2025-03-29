@@ -76,3 +76,17 @@ def compute_activations(model, input_ids):
         handle.remove()
     
     return activations
+
+def measure_memory():
+    """Measure GPU memory usage in GB."""
+    return torch.cuda.memory_allocated() / 1024**3
+
+
+if __name__ == "__main__":
+
+    weights = load_weights(model)
+    print(f"Extracted {len(weights)} weight matrices")
+    calib_data = caliberation_data(tokenizer)
+    print(f"Calibration data shape: {calib_data.shape}")
+    activations = compute_activations(model, calib_data)
+    print(f"Captured activations for {len(activations)} layers")
