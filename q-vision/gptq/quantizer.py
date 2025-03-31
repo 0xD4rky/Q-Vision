@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from utils import load_weights, caliberation_data
+from utils import load_weights, caliberation_data, compute_activations
 
 class GPTQ:
 
@@ -83,4 +83,30 @@ class GPTQ:
             quantized_model[name] = {"weights": W_quant, "scales": scales}
         
         return quantized_model
-            
+    
+    def apply_to_model(self, model, quantized_weights):
+        """Apply quantized weights back to the model."""
+
+        for name, module in model.named_modules():
+            if name in quantized_weights:
+                q_data = quantized_weights[name]
+                W_q = q_data["weights"].float() * q_data["scales"]
+                module.weight.data = W_q.view_as(module.weight).to(module.weight.dtype)
+
+    
+def quantize_model(model, input_ids, bits=4, group_size=128, block_size=32):
+    """Full quantization pipeline."""
+    weights = load_weights(model)
+    activations = compute_activations(model, input_ids)
+    
+    gptq = GPTQ(bits=bits, group_size=group_size, block_size=block_size)
+    quantized_weights = gptq.quantize_weights(weights, activations)
+    gptq.apply_to_model(model, quantized_weights)
+    return model
+    
+if __name__ == "__main__":
+    from utils import load_model_and_tokenizer, get_calibration_data
+    model, tokenizer = load_model_and_tokenizer("meta-llama/Llama-3.2-1B")
+    calib_data = get_calibration_data(tokenizer)
+    quantized_model = quantize_model(model, calib_data)
+    print("Model quantized successfully!")
