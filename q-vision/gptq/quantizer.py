@@ -45,4 +45,42 @@ class GPTQ:
             scales = torch.zeros(n_out, num_groups, dtype = weight.device)
             weight_copy = weight_groups.clone()
 
+            for g in range(num_groups):
+                activation_g = activation_groups[:, g, :]  # Shape: (B*seq_len, group_size)
+                hessian_g = torch.matmul(activation_g.T, activation_g) + 1e-6 * torch.eye(self.group_size, device=W.device)
+                
+                # Low-rank approximation (optional, for speed)
+                if self.block_size < self.group_size:
+                    eigvals, eigvecs = torch.linalg.eigh(hessian_g)
+                    top_k = self.block_size
+                    hessian_g_approx = torch.matmul(eigvecs[:, -top_k:], torch.diag(eigvals[-top_k:]) @ eigvecs[:, -top_k:].T)
+                    hessian_g_inv = torch.linalg.pinv(hessian_g_approx)
+                else:
+                    hessian_g_inv = torch.linalg.inv(hessian_g)
+                
+                weight_g = weight_copy[:, g, :]  # Shape: (n_out, group_size)
+                scale = weight_g.abs().max(dim=1, keepdim=True)[0] / self.maxq
+                scales[:, g] = scale.squeeze()
+                
+                errors = torch.zeros_like(weight_g)
+                for i in range(self.group_size):
+                    w_col = weight_g[:, i] - errors[:, i] 
+                    q_col = torch.clamp(torch.round(w_col / scale), -self.maxq, self.maxq)
+                    W_quant[:, g, i] = q_col.to(torch.int8)
+                    delta = w_col - q_col * scale.squeeze()
+                    # Update errors for remaining columns
+                    if i < self.group_size - 1:
+                        errors[:, i+1:] -= torch.outer(delta, hessian_g_inv[i, i+1:].squeeze())
+                
+                # Lazy update: Apply to remaining groups (simplified here)
+                if g < num_groups - 1:
+                    delta_weight_g = (weight_g - W_quant[:, g, :] * scale) @ activation_g.T
+                    weight_copy[:, g+1:, :] -= (delta_weight_g @ activation_groups[:, g+1:, :].transpose(-1, -2)) @ hessian_g_inv
+                
+            # Reshape and store
+            W_quant = W_quant.view(n_out, -1)[:, :weights[name].shape[1]]
+            scales = scales[:, :num_groups]
+            quantized_model[name] = {"weights": W_quant, "scales": scales}
+        
+        return quantized_model
             
