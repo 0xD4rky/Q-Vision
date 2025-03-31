@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from utils import load_weights, caliberation_data, compute_activations
+from utils import load_weights, calibration_data, compute_activations
+from ..hf_integration import load_llm
 
 class GPTQ:
 
@@ -105,8 +106,8 @@ def quantize_model(model, input_ids, bits=4, group_size=128, block_size=32):
     return model
     
 if __name__ == "__main__":
-    from utils import load_model_and_tokenizer, get_calibration_data
-    model, tokenizer = load_model_and_tokenizer("meta-llama/Llama-3.2-1B")
-    calib_data = get_calibration_data(tokenizer)
+    from utils import calibration_data
+    model, tokenizer = load_llm("meta-llama/Llama-3.2-1B")
+    calib_data = calibration_data(tokenizer)
     quantized_model = quantize_model(model, calib_data)
     print("Model quantized successfully!")

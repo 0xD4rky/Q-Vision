@@ -20,7 +20,7 @@ def load_weights(model):
             weights[name] = module.weight.data.clone().to("mps")
     return weights
 
-def caliberation_data(tokenizer, dataset_name="karpathy/tiny_shakespeare", num_samples=128, seq_len=512):
+def calibration_data(tokenizer, dataset_name="karpathy/tiny_shakespeare", num_samples=128, seq_len=512):
 
     """
     The main aim of this function is load and prepare data for caliberation
@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     weights = load_weights(model)
     print(f"Extracted {len(weights)} weight matrices")
-    calib_data = caliberation_data(tokenizer)
+    calib_data = calibration_data(tokenizer)
     print(f"Calibration data shape: {calib_data.shape}")
     activations = compute_activations(model, calib_data)
     print(f"Captured activations for {len(activations)} layers")
