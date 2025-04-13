@@ -4,7 +4,13 @@ import numpy as np
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from torch.nn import CrossEntropyLoss
 from utils import measure_memory, calibration_data
-from ..hf_integration import load_llm
+
+# Replace relative import with absolute import
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from hf_integration import load_llm
+
 from quantizer import quantize_model
 
 
@@ -48,3 +54,69 @@ def load_and_quantize_custom_model(model_name, tokenizer, calib_data):
     quant_time = time.time() - start_time
     print(f"Quantization completed in {quant_time:.2f} seconds")
     return quantized_model
+
+def load_bloke_model(model_name):
+    """Load TheBloke's pre-quantized model."""
+    model, tokenizer = load_llm(model_name, dtype=torch.float16)
+    return model, tokenizer
+
+def compare_models():
+    """Compare custom GPTQ model vs. TheBloke's model."""
+    # Define test parameters
+    prompt = "Tell me a short story about a brave adventurer in a mystical forest."
+    eval_text = (
+        "In the heart of the mystical forest, where ancient trees whispered secrets of old, "
+        "a brave adventurer named Elara set forth on a quest to find the lost Crystal of Dawn."
+    )  
+
+    _, tokenizer = load_llm("Qwen/Qwen2.5-1.5B-Instruct")
+    
+    print("Loading calibration data from Tiny Shakespeare...")
+    calib_data = calibration_data(tokenizer, num_samples=128, seq_len=512)
+    print(f"Calibration data shape: {calib_data.shape}")
+    
+    custom_model = load_and_quantize_custom_model("Qwen/Qwen2.5-1.5B-Instruct", tokenizer, calib_data)
+    bloke_model, _ = load_bloke_model("Qwen/Qwen2.5-1.5B-Instruct-GPTQ-Int4")
+    
+    # Run inference on both models
+    print("\nRunning inference on custom model...")
+    custom_output, custom_latency, custom_memory = run_inference(custom_model, tokenizer, prompt)
+    print("Running inference on Qwen's quantized model...")
+    bloke_output, bloke_latency, bloke_memory = run_inference(bloke_model, tokenizer, prompt)
+    
+    print("\nComputing perplexity...")
+    custom_ppl = compute_perplexity(custom_model, tokenizer, eval_text)
+    bloke_ppl = compute_perplexity(bloke_model, tokenizer, eval_text)
+    
+    # Print results
+    print("\n=== Performance Comparison ===")
+    print("\nCustom GPTQ Model:")
+    print(f"Output: {custom_output}")
+    print(f"Latency: {custom_latency:.2f} ms/token")
+    print(f"Memory Usage: {custom_memory:.2f} GB")
+    print(f"Perplexity: {custom_ppl:.2f}")
+    
+    print("\nTheBloke's GPTQ Model:")
+    print(f"Output: {bloke_output}")
+    print(f"Latency: {bloke_latency:.2f} ms/token")
+    print(f"Memory Usage: {bloke_memory:.2f} GB")
+    print(f"Perplexity: {bloke_ppl:.2f}")
+    
+    # Summary analysis
+    print("\n=== Summary ===")
+    if custom_ppl < bloke_ppl:
+        print("Custom model has better perplexity (lower is better).")
+    else:
+        print("Qwen quantized model has better perplexity.")
+    print(f"Latency difference: {custom_latency - bloke_latency:.2f} ms/token (positive means custom is slower)")
+    print(f"Memory difference: {custom_memory - bloke_memory:.2f} GB (positive means custom uses more)")
+
+if __name__ == "__main__":
+    
+    if not torch.backends.mps.is_available():
+        raise RuntimeError("CUDA is required for this test.")
+    
+    print(f"Current date: March 31, 2025\n")
+    
+    # Execute comparison
+    compare_models()
