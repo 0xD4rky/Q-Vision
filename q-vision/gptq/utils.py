@@ -3,8 +3,11 @@ import torch.nn as nn
 from datasets import load_dataset
 import numpy as np
 
-
-from ..hf_integration import *  
+# Replace relative import with absolute import
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from hf_integration import load_llm 
 
 model, tokenizer = load_llm('meta-llama/Llama-3.2-1B', 'mps')
 
