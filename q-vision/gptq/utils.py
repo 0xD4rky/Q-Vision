@@ -23,21 +23,27 @@ def load_weights(model):
             weights[name] = module.weight.data.clone().to("mps")
     return weights
 
-def calibration_data(tokenizer, dataset_name="karpathy/tiny_shakespeare", num_samples=128, seq_len=512):
-
+def calibration_data(tokenizer, num_samples=128, seq_len=512, dataset_name="karpathy/tiny_shakespeare"):
     """
-    The main aim of this function is load and prepare data for caliberation
+    Load calibration data from a dataset and tokenize it.
+    Returns a tensor of shape [num_samples, seq_len] with token IDs.
     """
+    from datasets import load_dataset
+    
+    dataset = load_dataset(dataset_name, split="train", trust_remote_code=True)
+    
+    text = dataset["text"][0]  # since the Tiny Shakespeare has one large text entry
 
-    dataset = load_dataset(dataset_name, split = "train")
-    text = dataset["text"][0] # since the Tiny Shakespeare has one large text entry
-
+    # Use a smaller chunk of text to avoid the sequence length issue
+    # Take the first 100K characters to avoid the token limit issue
+    truncated_text = text[:100000]
+    
     tokenized = tokenizer(
-        text, 
-        return_tensors = "pt",
-        truncation = False,
-        add_special_tokens = False
-        )
+        truncated_text, 
+        return_tensors="pt",
+        truncation=False,
+        add_special_tokens=False
+    )
 
     input_ids = tokenized["input_ids"].squeeze(0)
 
@@ -46,12 +52,14 @@ def calibration_data(tokenizer, dataset_name="karpathy/tiny_shakespeare", num_sa
         raise ValueError(f"Dataset is too small ({total_tokens} tokens) for seq_len={seq_len}")
     
     start_indices = np.random.randint(0, total_tokens - seq_len + 1, size=num_samples)
-    calibration_data = torch.stack([input_ids[i:i+seq_len] for i in start_indices]).to("cuda")
+    
+    # Use "mps" instead of "cuda" for Mac with Apple Silicon
+    device = "mps" if torch.backends.mps.is_available() else "cpu"
+    calibration_data = torch.stack([input_ids[i:i+seq_len] for i in start_indices]).to(device)
     
     return calibration_data
 
 def compute_activations(model, input_ids):
-
     """
     Function to compute the activations of model using the caliberation data
     """
@@ -61,7 +69,7 @@ def compute_activations(model, input_ids):
     def hook_fn(name):
         def hook(module, input, output):
             activations[name] = input[0].detach().clone()
-        return activations
+        return hook  # Return the hook function, not the activations dict
     
     handles = []
     for name, module in model.named_modules():
@@ -82,7 +90,14 @@ def compute_activations(model, input_ids):
 
 def measure_memory():
     """Measure GPU memory usage in GB."""
-    return torch.cuda.memory_allocated() / 1024**3
+    if torch.backends.mps.is_available():
+        # On macOS with MPS, we don't have direct memory measurement API
+        # Return an estimated value or 0
+        return 0.0  # Placeholder
+    elif torch.cuda.is_available():
+        return torch.cuda.memory_allocated() / 1024**3
+    else:
+        return 0.0
 
 
 if __name__ == "__main__":
