@@ -19,14 +19,16 @@ np.random.seed(42)
 
 def run_inference(model, tokenizer, prompt, max_tokens=50):
     """Run inference and measure latency, memory, and output."""
-    pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, device= "mps")
+    pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, device="mps")
     
+    # Warm-up without CUDA-specific code
     _ = pipe("Warm-up", max_new_tokens=5, do_sample=False)
-    torch.cuda.synchronize()
-
+    
+    # Remove CUDA synchronization that doesn't exist on MPS
     start_time = time.time()
     output = pipe(prompt, max_new_tokens=max_tokens, do_sample=False, return_full_text=False)[0]["generated_text"]
-    torch.cuda.synchronize()  
+    # No synchronization needed for MPS
+    
     latency = (time.time() - start_time) * 1000 / max_tokens  # ms/token
     memory = measure_memory()
     
@@ -47,7 +49,7 @@ def compute_perplexity(model, tokenizer, text, max_length=512):
 
 def load_and_quantize_custom_model(model_name, tokenizer, calib_data):
     """Load and quantize the custom model."""
-    model, _ = load_llm(model_name, dtype=torch.float16)
+    model, _ = load_llm(model_name)
     print("Quantizing custom model with EnhancedGPTQ...")
     start_time = time.time()
     quantized_model = quantize_model(model, calib_data, bits=4, group_size=128, block_size=32)
@@ -118,5 +120,4 @@ if __name__ == "__main__":
     
     print(f"Current date: March 31, 2025\n")
     
-    # Execute comparison
     compare_models()
