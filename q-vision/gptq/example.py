@@ -19,7 +19,7 @@ np.random.seed(42)
 
 def run_inference(model, tokenizer, prompt, max_tokens=50):
     """Run inference and measure latency, memory, and output."""
-    pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, device="mps")
+    pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, device="cuda")
     
     # Warm-up without CUDA-specific code
     _ = pipe("Warm-up", max_new_tokens=5, do_sample=False)
@@ -37,7 +37,7 @@ def run_inference(model, tokenizer, prompt, max_tokens=50):
 def compute_perplexity(model, tokenizer, text, max_length=512):
     """Compute perplexity on a given text."""
     model.eval()
-    encodings = tokenizer(text, return_tensors="pt", truncation=True, max_length=max_length).to("mps")
+    encodings = tokenizer(text, return_tensors="pt", truncation=True, max_length=max_length).to("cuda")
     input_ids = encodings["input_ids"]
     with torch.no_grad():
         outputs = model(input_ids)
@@ -59,7 +59,7 @@ def load_and_quantize_custom_model(model_name, tokenizer, calib_data):
 
 def load_bloke_model(model_name):
     """Load TheBloke's pre-quantized model."""
-    model, tokenizer = load_llm(model_name, dtype=torch.float16)
+    model, tokenizer = load_llm(model_name)
     return model, tokenizer
 
 def compare_models():
@@ -77,8 +77,8 @@ def compare_models():
     calib_data = calibration_data(tokenizer, num_samples=128, seq_len=512)
     print(f"Calibration data shape: {calib_data.shape}")
     
-    custom_model = load_and_quantize_custom_model("Qwen/Qwen2.5-1.5B-Instruct", tokenizer, calib_data)
-    bloke_model, _ = load_bloke_model("Qwen/Qwen2.5-1.5B-Instruct-GPTQ-Int4")
+    custom_model = load_and_quantize_custom_model("meta-llama/Llama-3.2-1B", tokenizer, calib_data)
+    bloke_model, _ = load_bloke_model("feelconstantfear/Llama-3.2-1B-QPTQ")
     
     # Run inference on both models
     print("\nRunning inference on custom model...")
@@ -115,7 +115,7 @@ def compare_models():
 
 if __name__ == "__main__":
     
-    if not torch.backends.mps.is_available():
+    if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required for this test.")
     
     print(f"Current date: March 31, 2025\n")

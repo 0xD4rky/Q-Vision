@@ -46,7 +46,7 @@ class GPTQ:
             ### INITIALIZING QUANTIZATION WEIGHTS AND SCALES
 
             weight_quant = torch.zeros_like(weight_groups, dtype = torch.int8)
-            scales = torch.zeros(n_out, num_groups, dtype = weight.device)
+            scales = torch.zeros(n_out, num_groups, device=weight.device, dtype=weight.dtype)            
             weight_copy = weight_groups.clone()
 
             for g in range(num_groups):
