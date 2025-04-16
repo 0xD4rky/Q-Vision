@@ -1,5 +1,5 @@
 import torch
-from transformers import AutoModel, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
 def load_llm(
@@ -10,9 +10,9 @@ def load_llm(
     Load an LLM from huggingface
     """
 
-    model = AutoModel.from_pretrained(
+    model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype = torch.bfloat16,
+        torch_dtype = torch.float16,
         device_map="auto",
         low_cpu_mem_usage=True
     )
