@@ -4,7 +4,7 @@ from transformers import AutoModel, AutoTokenizer
 
 def load_llm(
         model_name : str,
-        device = "cuda"
+        device = "mps"
 ):
     """
     Load an LLM from huggingface
