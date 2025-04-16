@@ -19,7 +19,8 @@ np.random.seed(42)
 
 def run_inference(model, tokenizer, prompt, max_tokens=50):
     """Run inference and measure latency, memory, and output."""
-    pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, device="cuda")
+    device = "mps" if torch.backends.mps.is_available() else "cpu"
+    pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, device=device)
     
     # Warm-up without CUDA-specific code
     _ = pipe("Warm-up", max_new_tokens=5, do_sample=False)
@@ -37,7 +38,8 @@ def run_inference(model, tokenizer, prompt, max_tokens=50):
 def compute_perplexity(model, tokenizer, text, max_length=512):
     """Compute perplexity on a given text."""
     model.eval()
-    encodings = tokenizer(text, return_tensors="pt", truncation=True, max_length=max_length).to("cuda")
+    device = "mps" if torch.backends.mps.is_available() else "cpu"
+    encodings = tokenizer(text, return_tensors="pt", truncation=True, max_length=max_length).to(device)
     input_ids = encodings["input_ids"]
     with torch.no_grad():
         outputs = model(input_ids)
@@ -49,7 +51,8 @@ def compute_perplexity(model, tokenizer, text, max_length=512):
 
 def load_and_quantize_custom_model(model_name, tokenizer, calib_data):
     """Load and quantize the custom model."""
-    model, _ = load_llm(model_name)
+    device = "mps" if torch.backends.mps.is_available() else "cpu"
+    model, _ = load_llm(model_name, device)
     print("Quantizing custom model with EnhancedGPTQ...")
     start_time = time.time()
     quantized_model = quantize_model(model, calib_data, bits=4, group_size=128, block_size=32)
@@ -59,7 +62,8 @@ def load_and_quantize_custom_model(model_name, tokenizer, calib_data):
 
 def load_bloke_model(model_name):
     """Load TheBloke's pre-quantized model."""
-    model, tokenizer = load_llm(model_name)
+    device = "mps" if torch.backends.mps.is_available() else "cpu"
+    model, tokenizer = load_llm(model_name, device)
     return model, tokenizer
 
 def compare_models():
@@ -71,7 +75,8 @@ def compare_models():
         "a brave adventurer named Elara set forth on a quest to find the lost Crystal of Dawn."
     )  
 
-    _, tokenizer = load_llm("Qwen/Qwen2.5-1.5B-Instruct")
+    device = "mps" if torch.backends.mps.is_available() else "cpu"
+    _, tokenizer = load_llm("Qwen/Qwen2.5-1.5B-Instruct", device)
     
     print("Loading calibration data from Tiny Shakespeare...")
     calib_data = calibration_data(tokenizer, num_samples=128, seq_len=512)
@@ -83,7 +88,7 @@ def compare_models():
     # Run inference on both models
     print("\nRunning inference on custom model...")
     custom_output, custom_latency, custom_memory = run_inference(custom_model, tokenizer, prompt)
-    print("Running inference on Qwen's quantized model...")
+    print("Running inference on TheBloke's quantized model...")
     bloke_output, bloke_latency, bloke_memory = run_inference(bloke_model, tokenizer, prompt)
     
     print("\nComputing perplexity...")
@@ -109,15 +114,16 @@ def compare_models():
     if custom_ppl < bloke_ppl:
         print("Custom model has better perplexity (lower is better).")
     else:
-        print("Qwen quantized model has better perplexity.")
+        print("TheBloke's quantized model has better perplexity.")
     print(f"Latency difference: {custom_latency - bloke_latency:.2f} ms/token (positive means custom is slower)")
     print(f"Memory difference: {custom_memory - bloke_memory:.2f} GB (positive means custom uses more)")
 
 if __name__ == "__main__":
     
-    if not torch.cuda.is_available():
-        raise RuntimeError("CUDA is required for this test.")
+    if not (torch.backends.mps.is_available() or torch.cuda.is_available()):
+        raise RuntimeError("Either MPS (for Mac) or CUDA is required for this test.")
     
-    print(f"Current date: March 31, 2025\n")
+    print(f"Current date: April 16, 2025\n")
+    print(f"Using device: {'MPS' if torch.backends.mps.is_available() else 'CUDA' if torch.cuda.is_available() else 'CPU'}")
     
     compare_models()
