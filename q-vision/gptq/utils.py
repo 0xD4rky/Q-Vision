@@ -9,7 +9,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from hf_integration import load_llm 
 
-model, tokenizer = load_llm('meta-llama/Llama-3.2-1B', 'cuda')
+model, tokenizer = load_llm('meta-llama/Llama-3.2-1B', 'mps')
 
 def load_weights(model):
 
@@ -20,7 +20,7 @@ def load_weights(model):
     weights = {}
     for name, module in model.named_modules():
         if isinstance(module, torch.nn.Linear):
-            weights[name] = module.weight.data.clone().to("cuda")
+            weights[name] = module.weight.data.clone().to("mps")
     return weights
 
 def calibration_data(tokenizer, num_samples=128, seq_len=512, dataset_name="karpathy/tiny_shakespeare"):
@@ -54,7 +54,7 @@ def calibration_data(tokenizer, num_samples=128, seq_len=512, dataset_name="karp
     start_indices = np.random.randint(0, total_tokens - seq_len + 1, size=num_samples)
     
     # Use "mps" instead of "cuda" for Mac with Apple Silicon
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = "mps" if torch.backends.mps.is_available() else "cpu"
     calibration_data = torch.stack([input_ids[i:i+seq_len] for i in start_indices]).to(device)
     
     return calibration_data
@@ -90,12 +90,12 @@ def compute_activations(model, input_ids):
 
 def measure_memory():
     """Measure GPU memory usage in GB."""
-    if torch.cuda.is_available():
+    if torch.backends.mps.is_available():
         # On macOS with MPS, we don't have direct memory measurement API
         # Return an estimated value or 0
         return 0.0  # Placeholder
-    elif torch.cuda.is_available():
-        return torch.cuda.memory_allocated() / 1024**3
+    elif torch.backends.mps.is_available():
+        return torch.backends.mps.memory_allocated() / 1024**3
     else:
         return 0.0
 
