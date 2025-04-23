@@ -99,3 +99,17 @@ def nf4_quantize(tensor):
     quantization_error = (tensor - quantized)**2
     
     return quantized, quantization_error
+
+
+def load_weight_sample():
+    print("Loading model (this might take a while)...")
+    model_config = AutoModelForCausalLM.from_pretrained(
+        "meta-llama/Llama-3.2-1B", 
+        device_map="auto", 
+        torch_dtype=torch.float16
+    )
+    
+    linear_weight = model_config.get_submodule("model.layers.0.self_attn.q_proj").weight
+    
+    print(f"Extracted weight tensor with shape: {linear_weight.shape}")
+    return linear_weight
