@@ -18,6 +18,7 @@ elif torch.backends.mps.is_available():
 else:
     device = "cpu"
 
+
 def fp4_quantize(tensor, num_exp_bits=2, num_mantissa_bits=1):
     """
     Simple 4-bit floating point quantization with 1 sign bit, 
@@ -61,6 +62,39 @@ def fp4_quantize(tensor, num_exp_bits=2, num_mantissa_bits=1):
         idx = torch.argmin(diffs)
         quantized[i] = signs[i] * fp4_values[idx]
     
+    quantized = quantized.reshape(original_shape)
+    quantization_error = (tensor - quantized)**2
+    
+    return quantized, quantization_error
+
+def nf4_quantize(tensor):
+    """
+    4-bit Normal Float quantization as used in QLoRA
+    """
+
+    # NF4 quantization levels - these are based on the normal distribution
+    # Values from the QLoRA paper, representing standard deviations from the mean
+    nf4_values = torch.tensor([
+        -1.7, -1.3, -1.0, -0.7, -0.4, -0.1, 0.1, 0.4, 0.7, 1.0, 1.3, 1.7, 2.1, 2.5, 2.9, 3.3
+    ], device=device)
+
+    original_shape = tensor.shape
+    tensor_flat = tensor.reshape(-1).clone
+
+    mean = tensor_flat.mean()
+    std = tensor_flat.std()
+
+    if std == 0:
+        return tensor, torch.zeros_like(tensor)
+    
+    normalized = (tensor_flat - mean) / std
+    quantized = torch.zeros_like(tensor_flat) # initializing the quantized tensor
+
+    for i in range(tensor_flat.shape[0]):
+        diffs = torch.abs(nf4_values - normalized[i])
+        idx = torch.argmin(diffs)
+        quantized[i] = (mean + std).to(device) * nf4_values[idx]
+
     quantized = quantized.reshape(original_shape)
     quantization_error = (tensor - quantized)**2
     
