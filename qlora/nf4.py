@@ -204,3 +204,12 @@ def compare_quantization_methods(weight_tensor):
         "fp4_mse": fp4_mse,
         "error_reduction": fp4_mse/nf4_mse
     }
+
+if __name__ == "__main__":
+    weight_tensor = load_weight_sample()
+    weight_tensor.to(device)
+    results = compare_quantization_methods(weight_tensor)
+    
+    print("\nConclusion:")
+    print(f"NF4 achieves {results['error_reduction']:.2f}x lower quantization error than FP4")
+    print("This demonstrates NF4's superior ability to represent neural network weights")
